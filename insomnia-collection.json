@@ -1,0 +1,378 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2024-12-02T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_metatx",
+      "_type": "workspace",
+      "name": "MetaTxForwarder API",
+      "description": "API para administrar el contrato MetaTxForwarder",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:3000",
+        "api_key": "tu_api_key_aqui",
+        "test_caller": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1",
+        "test_deployer": "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199"
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url",
+          "api_key",
+          "test_caller",
+          "test_deployer"
+        ]
+      },
+      "parentId": "wrk_metatx"
+    },
+    {
+      "_id": "folder_read",
+      "_type": "request_group",
+      "name": "📖 Read Operations (GET)",
+      "description": "Endpoints de solo lectura",
+      "parentId": "wrk_metatx"
+    },
+    {
+      "_id": "folder_write",
+      "_type": "request_group",
+      "name": "✍️ Write Operations (POST)",
+      "description": "Endpoints que modifican el contrato",
+      "parentId": "wrk_metatx"
+    },
+    {
+      "_id": "folder_callers",
+      "_type": "request_group",
+      "name": "Callers",
+      "parentId": "folder_write"
+    },
+    {
+      "_id": "folder_deployers",
+      "_type": "request_group",
+      "name": "Deployers",
+      "parentId": "folder_write"
+    },
+    {
+      "_id": "folder_config",
+      "_type": "request_group",
+      "name": "Configuration",
+      "parentId": "folder_write"
+    },
+    {
+      "_id": "req_health",
+      "_type": "request",
+      "name": "Health Check",
+      "description": "Verifica el estado de la API y el contrato",
+      "url": "{{ _.base_url }}/health",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        }
+      ],
+      "parameters": [],
+      "body": {},
+      "parentId": "folder_read"
+    },
+    {
+      "_id": "req_get_config",
+      "_type": "request",
+      "name": "Get Contract Config",
+      "description": "Obtiene la configuración general del contrato",
+      "url": "{{ _.base_url }}/config",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        }
+      ],
+      "parameters": [],
+      "body": {},
+      "parentId": "folder_read"
+    },
+    {
+      "_id": "req_check_caller",
+      "_type": "request",
+      "name": "Check Caller Allowed",
+      "description": "Verifica si un caller está permitido",
+      "url": "{{ _.base_url }}/caller/{{ _.test_caller }}/allowed",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        }
+      ],
+      "parameters": [],
+      "body": {},
+      "parentId": "folder_read"
+    },
+    {
+      "_id": "req_list_callers",
+      "_type": "request",
+      "name": "List All Callers",
+      "description": "Lista todos los callers permitidos",
+      "url": "{{ _.base_url }}/callers",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        }
+      ],
+      "parameters": [],
+      "body": {},
+      "parentId": "folder_read"
+    },
+    {
+      "_id": "req_check_deployer",
+      "_type": "request",
+      "name": "Check Deployer Allowed",
+      "description": "Verifica si un deployer está permitido",
+      "url": "{{ _.base_url }}/deployer/{{ _.test_deployer }}/allowed",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        }
+      ],
+      "parameters": [],
+      "body": {},
+      "parentId": "folder_read"
+    },
+    {
+      "_id": "req_deployer_info",
+      "_type": "request",
+      "name": "Get Deployer Info",
+      "description": "Obtiene información detallada de un deployer",
+      "url": "{{ _.base_url }}/deployer/{{ _.test_deployer }}/info",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        }
+      ],
+      "parameters": [],
+      "body": {},
+      "parentId": "folder_read"
+    },
+    {
+      "_id": "req_list_deployers",
+      "_type": "request",
+      "name": "List All Deployers",
+      "description": "Lista todos los deployers permitidos",
+      "url": "{{ _.base_url }}/deployers",
+      "method": "GET",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        }
+      ],
+      "parameters": [],
+      "body": {},
+      "parentId": "folder_read"
+    },
+    {
+      "_id": "req_set_caller_allowed",
+      "_type": "request",
+      "name": "Set Caller Allowed",
+      "description": "Habilita o deshabilita un caller",
+      "url": "{{ _.base_url }}/caller/set-allowed",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"caller\": \"{{ _.test_caller }}\",\n  \"allowed\": true\n}"
+      },
+      "parentId": "folder_callers"
+    },
+    {
+      "_id": "req_set_gas_limit",
+      "_type": "request",
+      "name": "Set Gas Limit Per Block",
+      "description": "Establece el límite de gas por bloque para un caller",
+      "url": "{{ _.base_url }}/caller/set-gas-limit",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"caller\": \"{{ _.test_caller }}\",\n  \"limit\": \"5000000\"\n}"
+      },
+      "parentId": "folder_callers"
+    },
+    {
+      "_id": "req_set_deployer_allowed",
+      "_type": "request",
+      "name": "Set Deployer Allowed",
+      "description": "Habilita o deshabilita un deployer",
+      "url": "{{ _.base_url }}/deployer/set-allowed",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"deployer\": \"{{ _.test_deployer }}\",\n  \"allowed\": true\n}"
+      },
+      "parentId": "folder_deployers"
+    },
+    {
+      "_id": "req_set_deployer_bucket",
+      "_type": "request",
+      "name": "Set Deployer Bucket Config",
+      "description": "Configura el bucket de gas personalizado para un deployer",
+      "url": "{{ _.base_url }}/deployer/set-bucket-config",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"deployer\": \"{{ _.test_deployer }}\",\n  \"limit\": \"20000000\",\n  \"durationSeconds\": \"1200\",\n  \"useCustom\": true\n}"
+      },
+      "parentId": "folder_deployers"
+    },
+    {
+      "_id": "req_set_deployers_batch",
+      "_type": "request",
+      "name": "Set Multiple Deployers (Batch)",
+      "description": "Habilita múltiples deployers en una sola transacción",
+      "url": "{{ _.base_url }}/deployers/set-allowed-batch",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"deployers\": [\n    \"{{ _.test_caller }}\",\n    \"{{ _.test_deployer }}\"\n  ],\n  \"allowed\": [true, true]\n}"
+      },
+      "parentId": "folder_deployers"
+    },
+    {
+      "_id": "req_set_gas_overhead",
+      "_type": "request",
+      "name": "Set Gas Accounting Overhead",
+      "description": "Establece el overhead de contabilidad de gas",
+      "url": "{{ _.base_url }}/config/set-gas-overhead",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"overhead\": \"15000\"\n}"
+      },
+      "parentId": "folder_config"
+    },
+    {
+      "_id": "req_set_erc2771",
+      "_type": "request",
+      "name": "Enable/Disable ERC-2771",
+      "description": "Habilita o deshabilita el modo ERC-2771",
+      "url": "{{ _.base_url }}/config/set-erc2771",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"enabled\": true\n}"
+      },
+      "parentId": "folder_config"
+    },
+    {
+      "_id": "req_set_default_bucket",
+      "_type": "request",
+      "name": "Set Default Deploy Bucket",
+      "description": "Configura el bucket de deploy por defecto",
+      "url": "{{ _.base_url }}/config/set-default-deploy-bucket",
+      "method": "POST",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "{{ _.api_key }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"limit\": \"10000000\",\n  \"durationSeconds\": \"600\"\n}"
+      },
+      "parentId": "folder_config"
+    }
+  ]
+}

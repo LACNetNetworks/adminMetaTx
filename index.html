@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaTxForwarder Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #475569;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .status-item {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .status-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            color: var(--text);
+            font-size: 16px;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            color: var(--text);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: var(--bg-tertiary);
+        }
+
+        /* Alert */
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .alert-info {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Config Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .badge-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+            }
+        }
+
+        /* Settings Icon */
+        .settings-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            transition: all 0.3s;
+            z-index: 999;
+        }
+
+        .settings-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        /* Toggle Address Button */
+        .address-toggle-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--success);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            transition: all 0.3s;
+            z-index: 999;
+        }
+
+        .address-toggle-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.6);
+        }
+
+        /* Address display */
+        .address {
+            font-family: 'Monaco', 'Courier New', monospace;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .address:hover {
+            color: var(--primary);
+        }
+
+        .address.full {
+            font-size: 13px;
+            word-break: break-all;
+        }
+
+        /* Copy tooltip */
+        .copy-tooltip {
+            position: absolute;
+            background: var(--success);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .copy-tooltip.show {
+            opacity: 1;
+        }
+
+        /* Badge para estado de direcciones */
+        .address-mode-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 11px;
+            margin-left: 10px;
+            color: var(--text-secondary);
+        }
+
+        /* Global Loader Overlay */
+        .loader-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .loader-overlay.show {
+            display: flex;
+        }
+
+        .loader-content {
+            background: var(--bg-secondary);
+            border: 2px solid var(--primary);
+            border-radius: 16px;
+            padding: 40px 60px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--bg-tertiary);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .loader-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .loader-subtext {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Button Loading State */
+        .btn.loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #8b5cf6);
+            border-radius: 2px;
+            animation: progress 2s ease-in-out infinite;
+            width: 0%;
+        }
+
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🚀 MetaTxForwarder Admin Panel</h1>
+            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <span style="color: var(--text-secondary); font-size: 14px;">
+                    Modo de visualización: 
+                    <span id="addressModeText" class="address-mode-badge">Direcciones cortas</span>
+                </span>
+            </div>
+            <div class="status-grid" id="statusGrid">
+                <div class="status-item">
+                    <div class="status-label">Status</div>
+                    <div class="status-value" id="statusValue">Cargando...</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Contract</div>
+                    <div class="status-value" id="contractAddress">-</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Owner</div>
+                    <div class="status-value" id="ownerAddress">-</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Network</div>
+                    <div class="status-value" id="networkName">-</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Block Number</div>
+                    <div class="status-value" id="blockNumber">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div id="alertContainer"></div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="callers">📞 Callers</button>
+            <button class="tab" data-tab="deployers">🚀 Deployers</button>
+            <button class="tab" data-tab="config">⚙️ Configuración</button>
+            <button class="tab" data-tab="monitor">📊 Monitor</button>
+        </div>
+
+        <!-- Tab: Callers -->
+        <div class="tab-content active" id="tab-callers">
+            <div class="card">
+                <h2>Administrar Callers</h2>
+                <div class="form-group">
+                    <label class="form-label">Dirección del Caller</label>
+                    <input type="text" class="form-input" id="callerAddress" placeholder="0x...">
+                </div>
+                <div class="form-row">
+                    <button class="btn btn-success" onclick="setCallerAllowed(true)">
+                        ✅ Permitir Caller
+                    </button>
+                    <button class="btn btn-danger" onclick="setCallerAllowed(false)">
+                        ❌ Bloquear Caller
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Configurar Límite de Gas</h2>
+                <div class="form-group">
+                    <label class="form-label">Dirección del Caller</label>
+                    <input type="text" class="form-input" id="gasLimitCallerAddress" placeholder="0x...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Límite de Gas por Bloque</label>
+                    <input type="number" class="form-input" id="gasLimitValue" placeholder="5000000">
+                </div>
+                <button class="btn btn-primary" onclick="setGasLimit()">
+                    💨 Establecer Límite
+                </button>
+            </div>
+
+            <div class="card">
+                <h2>Callers Permitidos</h2>
+                <button class="btn btn-secondary" onclick="loadCallers()" style="margin-bottom: 15px;">
+                    🔄 Actualizar Lista
+                </button>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Dirección</th>
+                                <th>Gas Limit</th>
+                                <th>Gas Usado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="callersTable">
+                            <tr>
+                                <td colspan="4" class="empty-state">
+                                    <div class="empty-state-icon">📭</div>
+                                    <p>No hay callers permitidos</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Deployers -->
+        <div class="tab-content" id="tab-deployers">
+            <div class="card">
+                <h2>Administrar Deployers</h2>
+                <div class="form-group">
+                    <label class="form-label">Dirección del Deployer</label>
+                    <input type="text" class="form-input" id="deployerAddress" placeholder="0x...">
+                </div>
+                <div class="form-row">
+                    <button class="btn btn-success" onclick="setDeployerAllowed(true)">
+                        ✅ Permitir Deployer
+                    </button>
+                    <button class="btn btn-danger" onclick="setDeployerAllowed(false)">
+                        ❌ Bloquear Deployer
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Configurar Bucket de Gas Personalizado</h2>
+                <div class="form-group">
+                    <label class="form-label">Dirección del Deployer</label>
+                    <input type="text" class="form-input" id="bucketDeployerAddress" placeholder="0x...">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Límite de Gas</label>
+                        <input type="number" class="form-input" id="bucketLimit" placeholder="20000000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Duración (segundos)</label>
+                        <input type="number" class="form-input" id="bucketDuration" placeholder="1200">
+                    </div>
+                </div>
+                <div class="checkbox-group" style="margin-bottom: 15px;">
+                    <input type="checkbox" class="checkbox" id="useCustomBucket" checked>
+                    <label class="form-label" style="margin: 0;">Usar configuración personalizada</label>
+                </div>
+                <button class="btn btn-primary" onclick="setDeployerBucket()">
+                    🪣 Configurar Bucket
+                </button>
+            </div>
+
+            <div class="card">
+                <h2>Deployers Permitidos</h2>
+                <button class="btn btn-secondary" onclick="loadDeployers()" style="margin-bottom: 15px;">
+                    🔄 Actualizar Lista
+                </button>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Dirección</th>
+                                <th>Estado</th>
+                                <th>Gas Usado</th>
+                                <th>Bucket Limit</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deployersTable">
+                            <tr>
+                                <td colspan="5" class="empty-state">
+                                    <div class="empty-state-icon">📭</div>
+                                    <p>No hay deployers permitidos</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Config -->
+        <div class="tab-content" id="tab-config">
+            <div class="card">
+                <h2>Configuración General</h2>
+                <div id="configInfo" style="margin-bottom: 20px;">
+                    <div class="status-grid">
+                        <div class="status-item">
+                            <div class="status-label">ERC-2771 Enabled</div>
+                            <div class="status-value" id="erc2771Status">-</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Gas Overhead</div>
+                            <div class="status-value" id="gasOverhead">-</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Default Deploy Bucket</div>
+                            <div class="status-value" id="defaultBucketLimit">-</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Bucket Duration</div>
+                            <div class="status-value" id="defaultBucketDuration">-</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="loadConfig()">
+                    🔄 Actualizar Configuración
+                </button>
+            </div>
+
+            <div class="card">
+                <h2>ERC-2771 (Append Sender)</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                    Controla si se añade la dirección del usuario original al final del calldata en las llamadas.
+                </p>
+                <div class="form-row">
+                    <button class="btn btn-success" onclick="setErc2771(true)">
+                        ✅ Habilitar ERC-2771
+                    </button>
+                    <button class="btn btn-danger" onclick="setErc2771(false)">
+                        ❌ Deshabilitar ERC-2771
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Gas Accounting Overhead</h2>
+                <div class="form-group">
+                    <label class="form-label">Overhead de Gas</label>
+                    <input type="number" class="form-input" id="overheadValue" placeholder="15000">
+                </div>
+                <button class="btn btn-primary" onclick="setGasOverhead()">
+                    💨 Actualizar Overhead
+                </button>
+            </div>
+
+            <div class="card">
+                <h2>Bucket de Deploy por Defecto</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Límite de Gas</label>
+                        <input type="number" class="form-input" id="defaultBucketLimitInput" placeholder="10000000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Duración (segundos)</label>
+                        <input type="number" class="form-input" id="defaultBucketDurationInput" placeholder="600">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="setDefaultBucket()">
+                    🪣 Actualizar Bucket Default
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab: Monitor -->
+        <div class="tab-content" id="tab-monitor">
+            <div class="card">
+                <h2>Monitor en Tiempo Real</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                    Monitorea el estado del contrato en tiempo real
+                </p>
+                <button class="btn btn-primary" onclick="startMonitoring()">
+                    ▶️ Iniciar Monitoreo
+                </button>
+                <button class="btn btn-danger" onclick="stopMonitoring()" style="margin-left: 10px;">
+                    ⏸️ Detener Monitoreo
+                </button>
+                <div id="monitorData" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Button -->
+    <button class="settings-btn" onclick="openConfigModal()" title="Configuración">⚙️</button>
+
+    <!-- Address Toggle Button -->
+    <button class="address-toggle-btn" onclick="toggleAddressDisplay()" title="Mostrar direcciones completas" id="addressToggleBtn">
+        👁️
+    </button>
+
+    <!-- Global Loader Overlay -->
+    <div class="loader-overlay" id="loaderOverlay">
+        <div class="loader-content">
+            <div class="spinner"></div>
+            <div class="loader-text" id="loaderText">Procesando transacción...</div>
+            <div class="loader-subtext" id="loaderSubtext">Por favor espera</div>
+            <div class="progress-bar">
+                <div class="progress-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Config Modal -->
+    <div class="modal" id="configModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Configuración de API</h2>
+                <button class="modal-close" onclick="closeConfigModal()">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">API URL</label>
+                <input type="text" class="form-input" id="apiUrl" placeholder="http://localhost:3000">
+            </div>
+            <div class="form-group">
+                <label class="form-label">API Key</label>
+                <input type="password" class="form-input" id="apiKey" placeholder="tu_api_key_aqui">
+            </div>
+            <button class="btn btn-primary" onclick="saveConfig()">
+                💾 Guardar Configuración
+            </button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
