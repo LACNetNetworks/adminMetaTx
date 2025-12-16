@@ -54,10 +54,7 @@ const server = http.createServer((req, res) => {
 
 
 
-function startWeb(port = 8888) {
-  server.listen(port, () => {
+const port = 8888
+server.listen(port, () => {
     console.log(`🎨 Web UI en http://localhost:${port}`);
-  });
-}
-
-module.exports = { startWeb };
+});

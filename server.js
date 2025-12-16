@@ -497,12 +497,11 @@ app.use((req, res) => {
 
 
 
-function startApi(port = process.env.PORT || 3000) {
-  app.listen(port, () => {
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
     console.log(`🚀 API MetaTxForwarder en puerto ${port}`);
     console.log(`📄 Contrato: ${process.env.CONTRACT_ADDRESS}`);
     console.log(`🌐 Network: ${process.env.NETWORK || 'unknown'}`);
-  });
-}
+});    
 
-module.exports = { startApi };
+    
