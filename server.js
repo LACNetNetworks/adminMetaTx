@@ -495,10 +495,14 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Endpoint no encontrado' });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`🚀 API MetaTxForwarder ejecutándose en puerto ${PORT}`);
+
+
+function startApi(port = process.env.PORT || 3000) {
+  app.listen(port, () => {
+    console.log(`🚀 API MetaTxForwarder en puerto ${port}`);
     console.log(`📄 Contrato: ${process.env.CONTRACT_ADDRESS}`);
     console.log(`🌐 Network: ${process.env.NETWORK || 'unknown'}`);
-});
+  });
+}
 
+module.exports = { startApi };

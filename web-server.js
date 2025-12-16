@@ -52,21 +52,12 @@ const server = http.createServer((req, res) => {
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`
-╔════════════════════════════════════════════════╗
-║   🎨 MetaTxForwarder Web Interface            ║
-╚════════════════════════════════════════════════╝
 
-✅ Servidor web ejecutándose en:
-   http://localhost:${PORT}
 
-📝 Instrucciones:
-   1. Abre http://localhost:${PORT} en tu navegador
-   2. Click en el botón de configuración (⚙️)
-   3. Ingresa tu API URL y API Key
-   4. ¡Listo para administrar tu contrato!
+function startWeb(port = 8888) {
+  server.listen(port, () => {
+    console.log(`🎨 Web UI en http://localhost:${port}`);
+  });
+}
 
-⚙️  Para detener el servidor: Ctrl+C
-`);
-});
+module.exports = { startWeb };
