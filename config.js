@@ -14,12 +14,12 @@
   const DEFAULTS = {
     testnet: {
       label: "Testnet",
-      apiUrl: "https://admin-metatx-test-production.up.railway.app/",
+      apiUrl: "https://admin-metatx-test-production.up.railway.app",
       contractAddress: "0x4053cA6bcdEc6638d9Ad83a5c74d0246C7670ACd"
     },
     mainnet: {
       label: "Mainnet",
-      apiUrl: "https://admin-metatx-production.up.railway.app/",
+      apiUrl: "https://admin-metatx-production.up.railway.app",
       contractAddress: "0x1B5c82C4093D2422699255f59f3B8A33c4a37773"
     }
   };

@@ -81,6 +81,7 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
     }
     
     try {
+        console.log(`${API_URL}${endpoint}`);
         const response = await fetch(`${API_URL}${endpoint}`, options);
         const data = await response.json();
         

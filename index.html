@@ -956,5 +956,166 @@
 
     <script src="config.js"></script>
     <script src="app.js"></script>
+    <script>
+        // Guardar red en localStorage con estructura de networkConfig
+        function saveNetworkConfigUI() {
+            const network = document.getElementById('networkSelect').value;
+            const apiUrl = document.getElementById('apiUrl').value;
+            const contractAddress = document.getElementById('contractAddressInput').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            // Guardar en variables globales
+            window.API_URL = apiUrl;
+            window.API_KEY = apiKey;
+            
+            // Guardar en localStorage
+            localStorage.setItem('apiUrl', apiUrl);
+            localStorage.setItem('apiKey', apiKey);
+            
+            const networkConfig = {
+                network: network,
+                apiUrl: apiUrl,
+                contractAddress: contractAddress,
+                apiKey: apiKey
+            };
+            
+            localStorage.setItem('networkConfig', JSON.stringify(networkConfig));
+            
+            showAlert('✅ Configuración guardada correctamente', 'success');
+            closeConfigModal();
+            
+            // Recargar datos
+            loadHealth();
+            loadCallers();
+            loadDeployers();
+            loadConfig();
+        }
+        
+        // Event listener para el cambio de red en el header
+        document.getElementById('networkSelectHeader').addEventListener('change', async function(event) {
+            const selectedNetwork = event.target.value;
+            console.log(`🔄 Cambiando a red: ${selectedNetwork}`);
+            
+            // Mostrar loader
+            showLoader('Cambiando de red...', 'Cargando datos de ' + selectedNetwork);
+            
+            try {
+                // Cargar configuración del backend
+                const configResponse = await fetch('/config');
+                const config = await configResponse.json();
+                const networkConfig = config[selectedNetwork];
+                
+                // Actualizar configuración global PRIMERO
+                if (networkConfig.apiUrl) {
+                    // Actualizar todas las referencias a API_URL
+                    window.API_URL = networkConfig.apiUrl;
+                    API_URL = networkConfig.apiUrl;
+                    
+                    // Actualizar también en localStorage
+                    localStorage.setItem('apiUrl', networkConfig.apiUrl);
+                    
+                    const savedConfig = JSON.parse(localStorage.getItem('networkConfig') || '{}');
+                    savedConfig.apiUrl = networkConfig.apiUrl;
+                    savedConfig.contractAddress = networkConfig.contractAddress || '';
+                    savedConfig.network = selectedNetwork;
+                    localStorage.setItem('networkConfig', JSON.stringify(savedConfig));
+                    
+                    console.log(`📡 API URL actualizada a: ${networkConfig.apiUrl}`);
+                }
+                
+                // Pequeño delay para asegurar que las variables se actualicen
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Sincronizar el select del modal de configuración
+                const modalNetworkSelect = document.getElementById('networkSelect');
+                if (modalNetworkSelect) {
+                    modalNetworkSelect.value = selectedNetwork;
+                }
+                
+                // Actualizar el input de contract address en el modal
+                const contractAddressInput = document.getElementById('contractAddressInput');
+                if (contractAddressInput && networkConfig.contractAddress) {
+                    contractAddressInput.value = networkConfig.contractAddress;
+                }
+                
+                // Actualizar el input de API URL en el modal
+                const apiUrlInput = document.getElementById('apiUrl');
+                if (apiUrlInput && networkConfig.apiUrl) {
+                    apiUrlInput.value = networkConfig.apiUrl;
+                }
+                
+                // Recargar todos los datos
+                console.log(`🔄 Iniciando recarga de datos con API_URL: ${API_URL}`);
+                
+                updateLoader('Cargando estado...', 'Obteniendo información del contrato');
+                await loadHealth(); // Esta función actualiza STATUS, CONTRACT, OWNER, NETWORK, BLOCK NUMBER
+                
+                updateLoader('Cargando callers...', 'Obteniendo lista de callers');
+                await loadCallers();
+                
+                updateLoader('Cargando deployers...', 'Obteniendo lista de deployers');
+                await loadDeployers();
+                
+                updateLoader('Cargando configuración...', 'Obteniendo parámetros del sistema');
+                await loadConfig();
+                
+                hideLoader();
+                
+                // Mostrar alerta de éxito
+                showAlert(`✅ Red cambiada exitosamente a ${selectedNetwork}`, 'success');
+                
+                console.log(`✅ Datos recargados para ${selectedNetwork}`);
+            } catch (error) {
+                hideLoader();
+                console.error('❌ Error al cambiar de red:', error);
+                showAlert(`❌ Error al cambiar de red: ${error.message}`, 'error');
+            }
+        });
+        
+        // Cargar configuración inicial desde /config endpoint
+        async function loadInitialConfig() {
+            try {
+                const configResponse = await fetch('/config');
+                const config = await configResponse.json();
+                
+                // Verificar si hay una red guardada en localStorage
+                const savedConfig = JSON.parse(localStorage.getItem('networkConfig') || '{}');
+                const currentNetwork = savedConfig.network || 'testnet';
+                
+                // Usar la configuración del backend si existe
+                const networkConfig = config[currentNetwork];
+                if (networkConfig && networkConfig.apiUrl) {
+                    window.API_URL = networkConfig.apiUrl;
+                    API_URL = networkConfig.apiUrl;
+                    localStorage.setItem('apiUrl', networkConfig.apiUrl);
+                    
+                    // Actualizar campos del modal
+                    document.getElementById('apiUrl').value = networkConfig.apiUrl;
+                    if (networkConfig.contractAddress) {
+                        document.getElementById('contractAddressInput').value = networkConfig.contractAddress;
+                    }
+                }
+                
+                // Sincronizar selectores
+                document.getElementById('networkSelectHeader').value = currentNetwork;
+                document.getElementById('networkSelect').value = currentNetwork;
+                
+                console.log(`🌐 Configuración inicial cargada para: ${currentNetwork}`);
+            } catch (error) {
+                console.error('Error cargando configuración inicial:', error);
+            }
+        }
+        
+        // Ejecutar al cargar la página
+        window.addEventListener('DOMContentLoaded', function() {
+            loadInitialConfig();
+        });
+        
+        // También sincronizar cuando se cambie desde el modal
+        document.getElementById('networkSelect').addEventListener('change', function(event) {
+            const selectedNetwork = event.target.value;
+            document.getElementById('networkSelectHeader').value = selectedNetwork;
+        });
+    </script>
 </body>
 </html>

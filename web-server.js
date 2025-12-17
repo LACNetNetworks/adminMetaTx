@@ -35,11 +35,11 @@ const server = http.createServer((req, res) => {
     if (req.url === '/config') {
         const payload = {
             testnet: {
-                apiUrl: process.env.TESTNET_API_URL || 'http://localhost:3000',
+                apiUrl: process.env.TESTNET_API_URL,
                 contractAddress: process.env.TESTNET_CONTRACT_ADDRESS || ''
             },
             mainnet: {
-                apiUrl: process.env.MAINNET_API_URL || 'http://localhost:3000',
+                apiUrl: process.env.MAINNET_API_URL,
                 contractAddress: process.env.MAINNET_CONTRACT_ADDRESS || ''
             }
         };
