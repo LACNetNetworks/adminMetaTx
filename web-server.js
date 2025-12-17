@@ -4,7 +4,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 8888;
+const PORT = 3001;
 
 const mimeTypes = {
     '.html': 'text/html',
@@ -84,7 +84,7 @@ const server = http.createServer((req, res) => {
 
 
 
-const port = 8888
+const port = 3001
 server.listen(port, () => {
     console.log(`🎨 Web UI en http://localhost:${port}`);
 });

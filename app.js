@@ -152,7 +152,7 @@ async function loadHealth() {
         document.getElementById('statusValue').textContent = data.status === 'ok' ? '✅ Online' : '❌ Offline';
         document.getElementById('contractAddress').innerHTML = shortenAddress(data.contract);
         document.getElementById('ownerAddress').innerHTML = shortenAddress(data.owner);
-        document.getElementById('networkName').textContent = data.network;
+        document.getElementById('networkName').textContent = "LNET";
         document.getElementById('blockNumber').textContent = data.blockNumber;
     } catch (error) {
         document.getElementById('statusValue').textContent = '❌ Error';
