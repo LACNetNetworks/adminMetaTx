@@ -1,6 +1,6 @@
 // Configuración
-let API_URL = localStorage.getItem('apiUrl') || 'http://localhost:3000';
-let API_KEY = localStorage.getItem('apiKey') || '';
+let API_URL = localStorage.getItem('apiUrl') || 'https://admin-metatx-test-production.up.railway.app';
+let API_KEY = localStorage.getItem('apiKey') || 'a7f3c8e9d2b1f4a6c8e0d9b7a5f2c1e8d4b6a9c7e5f1a8d3c6b9e2f7a4c1d8e5';
 
 let monitoringInterval = null;
 let showFullAddresses = localStorage.getItem('showFullAddresses') === 'true' || false;
