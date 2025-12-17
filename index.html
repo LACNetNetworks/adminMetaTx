@@ -630,6 +630,14 @@
         <div class="header">
             <h1>🚀 MetaTxForwarder Admin Panel</h1>
             <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <span style="margin-left: auto; display: flex; align-items: center; gap: 10px;">
+                    <span style="color: var(--text-secondary); font-size: 14px;">Red activa:</span>
+                    <select id="networkSelectHeader" class="form-input" style="width: auto; padding: 8px 12px; border-radius: 8px;">
+                        <option value="testnet">Testnet</option>
+                        <option value="mainnet">Mainnet</option>
+                    </select>
+                </span>
+
                 <span style="color: var(--text-secondary); font-size: 14px;">
                     Modo de visualización: 
                     <span id="addressModeText" class="address-mode-badge">Direcciones cortas</span>
@@ -918,23 +926,35 @@
     <div class="modal" id="configModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Configuración de API</h2>
+                <h2>Configuración de Red</h2>
                 <button class="modal-close" onclick="closeConfigModal()">×</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Red</label>
+                <select class="form-input" id="networkSelect">
+                    <option value="testnet">Testnet</option>
+                    <option value="mainnet">Mainnet</option>
+                </select>
             </div>
             <div class="form-group">
                 <label class="form-label">API URL</label>
                 <input type="text" class="form-input" id="apiUrl" placeholder="http://localhost:3000">
             </div>
             <div class="form-group">
+                <label class="form-label">Contract Address (Forwarder/Hub)</label>
+                <input type="text" class="form-input" id="contractAddressInput" placeholder="0x...">
+            </div>
+            <div class="form-group">
                 <label class="form-label">API Key</label>
                 <input type="password" class="form-input" id="apiKey" placeholder="tu_api_key_aqui">
             </div>
-            <button class="btn btn-primary" onclick="saveConfig()">
+            <button class="btn btn-primary" onclick="saveNetworkConfigUI()">
                 💾 Guardar Configuración
             </button>
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

@@ -4,9 +4,8 @@
   "description": "API REST para administrar el contrato MetaTxForwarder",
   "main": "server.js",
   "scripts": {
-    "server": "node server.js",
-    "web": "node web-server.js",
-    "dev": "nodemon server.js"
+    "start": "node web-server.js",
+    "dev": "nodemon web-server.js"
 },
   "keywords": [
     "ethereum",
