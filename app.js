@@ -1,71 +1,78 @@
-// Configuración
-let API_URL = localStorage.getItem('apiUrl') || 'https://admin-metatx-test-production.up.railway.app';
-let API_KEY = localStorage.getItem('apiKey') || 'a7f3c8e9d2b1f4a6c8e0d9b7a5f2c1e8d4b6a9c7e5f1a8d3c6b9e2f7a4c1d8e5';
+// Configuración - Se inicializa desde config.js
+let API_URL = '';
+let API_KEY = '';
 
 let monitoringInterval = null;
-let showFullAddresses = localStorage.getItem('showFullAddresses') === 'true' || false;
+let showFullAddresses = false;
+
+// Escuchar cambios de red desde config.js
+window.addEventListener('networkChanged', (event) => {
+    const config = event.detail;
+    API_URL = config.apiUrl;
+    API_KEY = config.apiKey;
+    console.log('🔄 Red cambiada:', config.network, '| API URL:', API_URL);
+    
+    loadHealth();
+    loadConfig();
+    
+    const activeTab = document.querySelector('.tab.active');
+    if (activeTab) {
+        const tabId = activeTab.getAttribute('data-tab');
+        if (tabId === 'callers') loadCallers();
+        if (tabId === 'deployers') loadDeployers();
+    }
+});
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', () => {
     setupTabs();
-    loadHealth();
-    loadConfig();
-    updateAddressModeUI();
     
-    // Si no hay API key configurada, abrir modal
-    if (!API_KEY) {
-        openConfigModal();
-    }
+    setTimeout(() => {
+        if (window.APP_CONFIG) {
+            API_URL = window.APP_CONFIG.apiUrl;
+            API_KEY = window.APP_CONFIG.apiKey;
+            console.log('✅ API URL inicial:', API_URL);
+            console.log('✅ API KEY cargado:', API_KEY ? '***' + API_KEY.slice(-4) : 'NO CONFIGURADO');
+            loadHealth();
+            loadConfig();
+        } else {
+            console.error('❌ No se pudo cargar la configuración inicial');
+        }
+    }, 100);
+    
+    updateAddressModeUI();
 });
-
-// ==================== CONFIGURACIÓN ====================
 
 function openConfigModal() {
     document.getElementById('configModal').classList.add('show');
-    document.getElementById('apiUrl').value = API_URL;
-    document.getElementById('apiKey').value = API_KEY;
+    if (window.APP_CONFIG) {
+        document.getElementById('apiUrl').value = window.APP_CONFIG.apiUrl || '';
+        const contractInput = document.getElementById('contractAddressInput');
+        if (contractInput) contractInput.value = window.APP_CONFIG.contractAddress || '';
+    }
 }
 
 function closeConfigModal() {
     document.getElementById('configModal').classList.remove('show');
 }
 
-function saveConfig() {
-    API_URL = document.getElementById('apiUrl').value;
-    API_KEY = document.getElementById('apiKey').value;
-    
-    localStorage.setItem('apiUrl', API_URL);
-    localStorage.setItem('apiKey', API_KEY);
-    
-    showAlert('Configuración guardada correctamente', 'success');
-    closeConfigModal();
-    loadHealth();
-}
-
-// ==================== TABS ====================
-
 function setupTabs() {
     const tabs = document.querySelectorAll('.tab');
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            // Remover active de todos los tabs
             tabs.forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             
-            // Activar tab clickeado
             tab.classList.add('active');
             const tabId = tab.getAttribute('data-tab');
             document.getElementById(`tab-${tabId}`).classList.add('active');
             
-            // Cargar datos según tab
             if (tabId === 'callers') loadCallers();
             if (tabId === 'deployers') loadDeployers();
             if (tabId === 'config') loadConfig();
         });
     });
 }
-
-// ==================== API HELPERS ====================
 
 async function apiRequest(endpoint, method = 'GET', body = null) {
     const options = {
@@ -76,13 +83,12 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
         }
     };
     
-    if (body) {
-        options.body = JSON.stringify(body);
-    }
+    if (body) options.body = JSON.stringify(body);
     
     try {
-        console.log(`${API_URL}${endpoint}`);
-        const response = await fetch(`${API_URL}${endpoint}`, options);
+        const url = `${API_URL}${endpoint}`;
+        console.log(`📡 ${method} ${url}`);
+        const response = await fetch(url, options);
         const data = await response.json();
         
         if (!response.ok) {
@@ -96,73 +102,59 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
     }
 }
 
-// ==================== ALERTS ====================
-
 function showAlert(message, type = 'info') {
     const container = document.getElementById('alertContainer');
     const alert = document.createElement('div');
     alert.className = `alert alert-${type} show`;
     alert.textContent = message;
-    
     container.appendChild(alert);
-    
     setTimeout(() => {
         alert.classList.remove('show');
         setTimeout(() => alert.remove(), 300);
     }, 5000);
 }
 
-// ==================== LOADER ====================
-
 function showLoader(text = 'Procesando transacción...', subtext = 'Por favor espera') {
     const overlay = document.getElementById('loaderOverlay');
-    const loaderText = document.getElementById('loaderText');
-    const loaderSubtext = document.getElementById('loaderSubtext');
-    
-    loaderText.textContent = text;
-    loaderSubtext.textContent = subtext;
+    document.getElementById('loaderText').textContent = text;
+    document.getElementById('loaderSubtext').textContent = subtext;
     overlay.classList.add('show');
-    
-    // Deshabilitar scroll
     document.body.style.overflow = 'hidden';
 }
 
 function hideLoader() {
-    const overlay = document.getElementById('loaderOverlay');
-    overlay.classList.remove('show');
-    
-    // Habilitar scroll
+    document.getElementById('loaderOverlay').classList.remove('show');
     document.body.style.overflow = 'auto';
 }
 
 function updateLoader(text, subtext) {
     const loaderText = document.getElementById('loaderText');
     const loaderSubtext = document.getElementById('loaderSubtext');
-    
     if (loaderText) loaderText.textContent = text;
     if (loaderSubtext) loaderSubtext.textContent = subtext;
 }
 
-// ==================== HEALTH & STATUS ====================
-
 async function loadHealth() {
     try {
         const data = await apiRequest('/health');
-        
         document.getElementById('statusValue').textContent = data.status === 'ok' ? '✅ Online' : '❌ Offline';
         document.getElementById('contractAddress').innerHTML = shortenAddress(data.contract);
         document.getElementById('ownerAddress').innerHTML = shortenAddress(data.owner);
-        document.getElementById('networkName').textContent = "LNET";
         document.getElementById('blockNumber').textContent = data.blockNumber;
+        
+        const networkNameEl = document.getElementById('networkName');
+        if (networkNameEl && !networkNameEl.textContent) {
+            networkNameEl.textContent = "LNET";
+        }
     } catch (error) {
         document.getElementById('statusValue').textContent = '❌ Error';
+        console.error('Error loading health:', error);
     }
 }
 
 async function loadConfig() {
     try {
         const data = await apiRequest('/config');
-        
         document.getElementById('erc2771Status').textContent = data.erc2771AppendSender ? '✅ Habilitado' : '❌ Deshabilitado';
         document.getElementById('gasOverhead').textContent = data.gasAccountingOverhead;
         document.getElementById('defaultBucketLimit').textContent = formatNumber(data.defaultDeployGasBucketLimit);
@@ -172,27 +164,15 @@ async function loadConfig() {
     }
 }
 
-// ==================== CALLERS ====================
-
-async function setCallerAllowed(allowed) {
-    const address = document.getElementById('callerAddress').value;
-    
+async function setCallerAllowed(address,allowed) {
     if (!address || !isValidAddress(address)) {
-        showAlert('Dirección inválida', 'error');
+        showAlert('Dirección inválida '+allowed , 'error');
         return;
     }
-    
+    showAlert('setCallerAllowed called with:', address, allowed);
     try {
-        showLoader(
-            allowed ? 'Permitiendo caller...' : 'Bloqueando caller...',
-            `Procesando: ${shortenAddressPlain(address)}`
-        );
-        
-        const data = await apiRequest('/caller/set-allowed', 'POST', {
-            caller: address,
-            allowed: allowed
-        });
-        
+        showLoader(allowed ? 'Permitiendo caller...' : 'Bloqueando caller...', `Procesando: ${shortenAddressPlain(address)}`);
+        const data = await apiRequest('/caller/set-allowed', 'POST', { caller: address, allowed: allowed });
         hideLoader();
         showAlert(`Caller ${allowed ? 'permitido' : 'bloqueado'} correctamente. TX: ${shortenHash(data.txHash)}`, 'success');
         document.getElementById('callerAddress').value = '';
@@ -211,23 +191,14 @@ async function setGasLimit() {
         showAlert('Dirección inválida', 'error');
         return;
     }
-    
     if (!limit || limit <= 0) {
         showAlert('Límite de gas inválido', 'error');
         return;
     }
     
     try {
-        showLoader(
-            'Configurando límite de gas...',
-            `${formatNumber(limit)} gas para ${shortenAddressPlain(address)}`
-        );
-        
-        const data = await apiRequest('/caller/set-gas-limit', 'POST', {
-            caller: address,
-            limit: limit
-        });
-        
+        showLoader('Configurando límite de gas...', `${formatNumber(limit)} gas para ${shortenAddressPlain(address)}`);
+        const data = await apiRequest('/caller/set-gas-limit', 'POST', { caller: address, limit: limit });
         hideLoader();
         showAlert(`Gas limit establecido correctamente. TX: ${shortenHash(data.txHash)}`, 'success');
         document.getElementById('gasLimitCallerAddress').value = '';
@@ -241,223 +212,239 @@ async function setGasLimit() {
 
 async function loadCallers() {
     try {
-        const data = await apiRequest('/callers');
-        const tbody = document.getElementById('callersTable');
+        console.log('🔄 Iniciando loadCallers...');
         
-        if (data.callers.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="4" class="empty-state">
-                        <div class="empty-state-icon">📭</div>
-                        <p>No hay callers permitidos</p>
-                    </td>
-                </tr>
-            `;
+        // 1. Obtener lista de addresses del backend
+        const listData = await apiRequest('/callers');
+        console.log('📋 Lista de callers recibida:', listData);
+        
+        const tbody = document.getElementById('callersTable');
+        if (!tbody) {
+            console.error('❌ No se encontró el elemento callersTable');
             return;
         }
         
-        tbody.innerHTML = '';
-        
-        for (const caller of data.callers) {
-            const info = await apiRequest(`/caller/${caller}/allowed`);
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${shortenAddress(caller)}</td>
-                <td>${formatNumber(info.gasLimitPerBlock)}</td>
-                <td>${formatNumber(info.gasUsedThisBlock.used)} / ${formatNumber(info.gasUsedThisBlock.limit)}</td>
-                <td>
-                    <button class="btn btn-danger" onclick="removeCallerConfirm('${caller}')" style="padding: 6px 12px; font-size: 12px;">
-                        🗑️ Eliminar
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        }
-    } catch (error) {
-        console.error('Error loading callers:', error);
-    }
-}
-
-async function removeCallerConfirm(address) {
-    if (confirm(`¿Seguro que quieres eliminar el caller ${shortenAddressPlain(address)}?`)) {
-        try {
-            showLoader(
-                'Eliminando caller...',
-                shortenAddressPlain(address)
+        if (listData.callers && listData.callers.length > 0) {
+            const addresses = listData.callers;
+            console.log(`📦 Procesando ${addresses.length} callers...`);
+            
+            // 2. Para cada address, obtener info completa
+            const callersWithDetails = await Promise.all(
+                addresses.map(async (address) => {
+                    try {
+                        console.log(`  🔍 Consultando info de: ${address}`);
+                        
+                        // Llamar a /caller/:address/allowed que devuelve todo
+                        const data = await apiRequest(`/caller/${address}/allowed`);
+                        console.log(`  ✅ Datos recibidos:`, data);
+                        
+                        return {
+                            address: address,
+                            allowed: data.isAllowed !== undefined ? data.isAllowed : true,
+                            gasLimit: data.gasLimitPerBlock !== undefined ? String(data.gasLimitPerBlock) : '0',
+                            gasUsed: data.gasUsedThisBlock?.used !== undefined ? String(data.gasUsedThisBlock.used) : '0'
+                        };
+                    } catch (error) {
+                        console.error(`  ❌ Error obteniendo info de ${address}:`, error);
+                        return {
+                            address: address,
+                            allowed: true,
+                            gasLimit: '0',
+                            gasUsed: '0'
+                        };
+                    }
+                })
             );
             
-            await apiRequest('/caller/set-allowed', 'POST', {
-                caller: address,
-                allowed: false
+            console.log('📊 Callers con detalles:', callersWithDetails);
+            
+            // 3. Renderizar tabla
+            const rows = callersWithDetails.map((caller) => {
+                const addressHTML = shortenAddress(caller.address);
+                const statusBadge = caller.allowed ? 'badge-success' : 'badge-danger';
+                const statusText = caller.allowed ? 'Permitido' : 'Bloqueado';
+                
+                return `
+                <tr>
+                    <td>${addressHTML}</td>
+                    <td><span class="badge ${statusBadge}">${statusText}</span></td>
+                    <td>${formatNumber(caller.gasLimit)}</td>
+                    <td>${formatNumber(caller.gasUsed)}</td>
+                    <td>
+                        <button class="btn-action btn-danger" onclick="setCallerAllowed('${caller.address}',false)" title="Bloquear">🚫</button>
+                    </td>
+                </tr>`;
             });
             
-            hideLoader();
-            showAlert('Caller eliminado correctamente', 'success');
-            loadCallers();
-        } catch (error) {
-            hideLoader();
-            console.error('Error removing caller:', error);
+            tbody.innerHTML = rows.join('');
+            console.log(`✅ ${callersWithDetails.length} callers cargados en la tabla`);
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No hay callers registrados</td></tr>';
         }
+    } catch (error) {
+        console.error('❌ Error loading callers:', error);
+        const tbody = document.getElementById('callersTable');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error cargando callers</td></tr>';
     }
 }
 
-// ==================== DEPLOYERS ====================
-
-async function setDeployerAllowed(allowed) {
+async function addDeployer() {
     const address = document.getElementById('deployerAddress').value;
-    
     if (!address || !isValidAddress(address)) {
         showAlert('Dirección inválida', 'error');
         return;
     }
     
     try {
-        showLoader(
-            allowed ? 'Permitiendo deployer...' : 'Bloqueando deployer...',
-            `Procesando: ${shortenAddressPlain(address)}`
-        );
-        
-        const data = await apiRequest('/deployer/set-allowed', 'POST', {
-            deployer: address,
-            allowed: allowed
-        });
-        
+        showLoader('Agregando deployer...', `Procesando: ${shortenAddressPlain(address)}`);
+        const data = await apiRequest('/deployer/set-allowed', 'POST', { deployer: address, allowed: true });
         hideLoader();
-        showAlert(`Deployer ${allowed ? 'permitido' : 'bloqueado'} correctamente. TX: ${shortenHash(data.txHash)}`, 'success');
+        showAlert(`Deployer agregado correctamente. TX: ${shortenHash(data.txHash)}`, 'success');
         document.getElementById('deployerAddress').value = '';
         loadDeployers();
     } catch (error) {
         hideLoader();
-        console.error('Error setting deployer:', error);
+        console.error('Error adding deployer:', error);
     }
 }
 
-async function setDeployerBucket() {
+async function setDeployBucket() {
     const address = document.getElementById('bucketDeployerAddress').value;
     const limit = document.getElementById('bucketLimit').value;
     const duration = document.getElementById('bucketDuration').value;
-    const useCustom = document.getElementById('useCustomBucket').checked;
     
     if (!address || !isValidAddress(address)) {
         showAlert('Dirección inválida', 'error');
         return;
     }
-    
     if (!limit || limit <= 0) {
         showAlert('Límite de gas inválido', 'error');
         return;
     }
-    
     if (!duration || duration <= 0) {
         showAlert('Duración inválida', 'error');
         return;
     }
     
     try {
-        showLoader(
-            'Configurando bucket de gas...',
-            `Límite: ${formatNumber(limit)} | Duración: ${duration}s`
-        );
-        
-        const data = await apiRequest('/deployer/set-bucket-config', 'POST', {
-            deployer: address,
-            limit: limit,
+        showLoader('Configurando gas bucket...', `${formatNumber(limit)} gas por ${duration}s`);
+        const data = await apiRequest('/deployer/set-bucket-config', 'POST', { 
+            deployer: address, 
+            limit: limit, 
             durationSeconds: duration,
-            useCustom: useCustom
+            useCustom: true 
         });
-        
         hideLoader();
-        showAlert(`Bucket configurado correctamente. TX: ${shortenHash(data.txHash)}`, 'success');
+        showAlert(`Gas bucket configurado correctamente. TX: ${shortenHash(data.txHash)}`, 'success');
         document.getElementById('bucketDeployerAddress').value = '';
         document.getElementById('bucketLimit').value = '';
         document.getElementById('bucketDuration').value = '';
         loadDeployers();
     } catch (error) {
         hideLoader();
-        console.error('Error setting bucket:', error);
+        console.error('Error setting deploy bucket:', error);
     }
 }
 
 async function loadDeployers() {
     try {
-        const data = await apiRequest('/deployers');
-        const tbody = document.getElementById('deployersTable');
+        console.log('🔄 Iniciando loadDeployers...');
         
-        if (data.deployers.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="empty-state">
-                        <div class="empty-state-icon">📭</div>
-                        <p>No hay deployers permitidos</p>
-                    </td>
-                </tr>
-            `;
+        // 1. Obtener lista de addresses del backend
+        const listData = await apiRequest('/deployers');
+        console.log('📋 Lista de deployers recibida:', listData);
+        
+        const tbody = document.getElementById('deployersTable');
+        if (!tbody) {
+            console.error('❌ No se encontró el elemento deployersTable');
             return;
         }
         
-        tbody.innerHTML = '';
-        
-        for (const deployer of data.deployers) {
-            const info = await apiRequest(`/deployer/${deployer}/info`);
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${shortenAddress(deployer)}</td>
-                <td>
-                    <span class="badge ${info.allowed ? 'badge-success' : 'badge-danger'}">
-                        ${info.allowed ? '✅ Permitido' : '❌ Bloqueado'}
-                    </span>
-                </td>
-                <td>${formatNumber(info.currentState.used)} / ${formatNumber(info.currentState.limit)}</td>
-                <td>${formatNumber(info.gasBucketLimit)}</td>
-                <td>
-                    <button class="btn btn-danger" onclick="removeDeployerConfirm('${deployer}')" style="padding: 6px 12px; font-size: 12px;">
-                        🗑️ Eliminar
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        }
-    } catch (error) {
-        console.error('Error loading deployers:', error);
-    }
-}
-
-async function removeDeployerConfirm(address) {
-    if (confirm(`¿Seguro que quieres eliminar el deployer ${shortenAddressPlain(address)}?`)) {
-        try {
-            showLoader(
-                'Eliminando deployer...',
-                shortenAddressPlain(address)
+        if (listData.deployers && listData.deployers.length > 0) {
+            const addresses = listData.deployers;
+            console.log(`📦 Procesando ${addresses.length} deployers...`);
+            
+            // 2. Para cada address, obtener info completa
+            const deployersWithDetails = await Promise.all(
+                addresses.map(async (address) => {
+                    try {
+                        console.log(`  🔍 Consultando info de: ${address}`);
+                        
+                        // Llamar a /deployer/:address/info que devuelve todo
+                        const data = await apiRequest(`/deployer/${address}/info`);
+                        console.log(`  ✅ Datos recibidos:`, data);
+                        
+                        return {
+                            address: address,
+                            allowed: data.allowed !== undefined ? data.allowed : true,
+                            gasLimit: data.gasBucketLimit !== undefined ? String(data.gasBucketLimit) : '0',
+                            duration: data.gasBucketDuration !== undefined ? String(data.gasBucketDuration) : '0',
+                            gasUsed: data.gasUsedInWindow !== undefined ? String(data.gasUsedInWindow) : '0'
+                        };
+                    } catch (error) {
+                        console.error(`  ❌ Error obteniendo info de ${address}:`, error);
+                        return {
+                            address: address,
+                            allowed: true,
+                            gasLimit: '0',
+                            duration: '0',
+                            gasUsed: '0'
+                        };
+                    }
+                })
             );
             
-            await apiRequest('/deployer/set-allowed', 'POST', {
-                deployer: address,
-                allowed: false
+            console.log('📊 Deployers con detalles:', deployersWithDetails);
+            
+            // 3. Renderizar tabla
+            const rows = deployersWithDetails.map((deployer) => {
+                const addressHTML = shortenAddress(deployer.address);
+                const statusBadge = deployer.allowed ? 'badge-success' : 'badge-danger';
+                const statusText = deployer.allowed ? 'Permitido' : 'Bloqueado';
+                
+                return `
+                <tr>
+                    <td>${addressHTML}</td>
+                    <td><span class="badge ${statusBadge}">${statusText}</span></td>
+                    <td>${formatNumber(deployer.gasUsed)}</td>
+                    <td>${formatNumber(deployer.gasLimit)}</td>
+                    <td>
+                        <button class="btn-action btn-danger" onclick="removeDeployer('${deployer.address}')" title="Eliminar">🗑️</button>
+                    </td>
+                </tr>`;
             });
             
-            hideLoader();
-            showAlert('Deployer eliminado correctamente', 'success');
-            loadDeployers();
-        } catch (error) {
-            hideLoader();
-            console.error('Error removing deployer:', error);
+            tbody.innerHTML = rows.join('');
+            console.log(`✅ ${deployersWithDetails.length} deployers cargados en la tabla`);
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No hay deployers registrados</td></tr>';
         }
+    } catch (error) {
+        console.error('❌ Error loading deployers:', error);
+        const tbody = document.getElementById('deployersTable');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error cargando deployers</td></tr>';
     }
 }
 
-// ==================== CONFIGURATION ====================
+async function removeDeployer(address) {
+    if (!confirm(`¿Estás seguro de eliminar el deployer ${shortenAddressPlain(address)}?`)) return;
+    
+    try {
+        showLoader('Eliminando deployer...', `Procesando: ${shortenAddressPlain(address)}`);
+        const data = await apiRequest('/deployer/set-allowed', 'POST', { deployer: address, allowed: false });
+        hideLoader();
+        showAlert(`Deployer eliminado correctamente. TX: ${shortenHash(data.txHash)}`, 'success');
+        loadDeployers();
+    } catch (error) {
+        hideLoader();
+        console.error('Error removing deployer:', error);
+    }
+}
 
 async function setErc2771(enabled) {
     try {
-        showLoader(
-            enabled ? 'Habilitando ERC-2771...' : 'Deshabilitando ERC-2771...',
-            'Append sender al calldata'
-        );
-        
-        const data = await apiRequest('/config/set-erc2771', 'POST', {
-            enabled: enabled
-        });
-        
+        showLoader(enabled ? 'Habilitando ERC-2771...' : 'Deshabilitando ERC-2771...', 'Append sender al calldata');
+        const data = await apiRequest('/config/set-erc2771', 'POST', { enabled: enabled });
         hideLoader();
         showAlert(`ERC-2771 ${enabled ? 'habilitado' : 'deshabilitado'} correctamente. TX: ${shortenHash(data.txHash)}`, 'success');
         loadConfig();
@@ -469,22 +456,14 @@ async function setErc2771(enabled) {
 
 async function setGasOverhead() {
     const overhead = document.getElementById('overheadValue').value;
-    
     if (!overhead || overhead <= 0) {
         showAlert('Overhead inválido', 'error');
         return;
     }
     
     try {
-        showLoader(
-            'Configurando gas overhead...',
-            `Nuevo valor: ${formatNumber(overhead)}`
-        );
-        
-        const data = await apiRequest('/config/set-gas-overhead', 'POST', {
-            overhead: overhead
-        });
-        
+        showLoader('Configurando gas overhead...', `Nuevo valor: ${formatNumber(overhead)}`);
+        const data = await apiRequest('/config/set-gas-overhead', 'POST', { overhead: overhead });
         hideLoader();
         showAlert(`Gas overhead actualizado correctamente. TX: ${shortenHash(data.txHash)}`, 'success');
         document.getElementById('overheadValue').value = '';
@@ -503,23 +482,14 @@ async function setDefaultBucket() {
         showAlert('Límite inválido', 'error');
         return;
     }
-    
     if (!duration || duration <= 0) {
         showAlert('Duración inválida', 'error');
         return;
     }
     
     try {
-        showLoader(
-            'Configurando bucket por defecto...',
-            `Límite: ${formatNumber(limit)} | Duración: ${duration}s`
-        );
-        
-        const data = await apiRequest('/config/set-default-deploy-bucket', 'POST', {
-            limit: limit,
-            durationSeconds: duration
-        });
-        
+        showLoader('Configurando bucket por defecto...', `Límite: ${formatNumber(limit)} | Duración: ${duration}s`);
+        const data = await apiRequest('/config/set-default-deploy-bucket', 'POST', { limit: limit, durationSeconds: duration });
         hideLoader();
         showAlert(`Bucket default actualizado correctamente. TX: ${shortenHash(data.txHash)}`, 'success');
         document.getElementById('defaultBucketLimitInput').value = '';
@@ -531,17 +501,14 @@ async function setDefaultBucket() {
     }
 }
 
-// ==================== MONITORING ====================
-
 function startMonitoring() {
     if (monitoringInterval) {
         showAlert('El monitoreo ya está activo', 'info');
         return;
     }
-    
     showAlert('Monitoreo iniciado', 'success');
     updateMonitor();
-    monitoringInterval = setInterval(updateMonitor, 5000); // Actualizar cada 5 segundos
+    monitoringInterval = setInterval(updateMonitor, 5000);
 }
 
 function stopMonitoring() {
@@ -559,8 +526,7 @@ async function updateMonitor() {
         const callers = await apiRequest('/callers');
         const deployers = await apiRequest('/deployers');
         
-        const monitorData = document.getElementById('monitorData');
-        monitorData.innerHTML = `
+        document.getElementById('monitorData').innerHTML = `
             <div class="status-grid">
                 <div class="status-item">
                     <div class="status-label">Bloque Actual</div>
@@ -588,8 +554,6 @@ async function updateMonitor() {
     }
 }
 
-// ==================== UTILS ====================
-
 function isValidAddress(address) {
     return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
@@ -601,11 +565,10 @@ function shortenAddressPlain(address) {
 
 function shortenAddress(address) {
     if (!address) return '-';
-    if (showFullAddresses) {
-        return createAddressElement(address, true);
-    }
-    return createAddressElement(address, false);
+    return createAddressElement(address, showFullAddresses);
 }
+
+window.shortenAddress = shortenAddress;
 
 function createAddressElement(address, isFull) {
     const displayText = isFull ? address : `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -618,8 +581,17 @@ function shortenHash(hash) {
 }
 
 function formatNumber(num) {
-    if (!num || num === '0') return '0';
-    return parseInt(num).toLocaleString();
+    const numStr = String(num);
+    if (!num && num !== 0) return '0';
+    if (numStr === '0' || num === 0) return '0';
+    try {
+        const parsed = parseInt(numStr);
+        if (isNaN(parsed)) return '0';
+        return parsed.toLocaleString();
+    } catch (e) {
+        console.warn('Error formateando número:', num, e);
+        return String(num);
+    }
 }
 
 function copyToClipboard(text, event) {
@@ -632,7 +604,6 @@ function copyToClipboard(text, event) {
 }
 
 function showCopyTooltip(element) {
-    // Crear tooltip si no existe
     let tooltip = element.querySelector('.copy-tooltip');
     if (!tooltip) {
         tooltip = document.createElement('div');
@@ -641,22 +612,13 @@ function showCopyTooltip(element) {
         element.style.position = 'relative';
         element.appendChild(tooltip);
     }
-    
-    // Mostrar tooltip
     tooltip.classList.add('show');
-    
-    // Ocultar después de 2 segundos
-    setTimeout(() => {
-        tooltip.classList.remove('show');
-    }, 2000);
+    setTimeout(() => tooltip.classList.remove('show'), 2000);
 }
 
 function toggleAddressDisplay() {
     showFullAddresses = !showFullAddresses;
-    localStorage.setItem('showFullAddresses', showFullAddresses);
     updateAddressModeUI();
-    
-    // Recargar las vistas actuales
     loadHealth();
     const activeTab = document.querySelector('.tab.active');
     if (activeTab) {
@@ -664,23 +626,17 @@ function toggleAddressDisplay() {
         if (tabId === 'callers') loadCallers();
         if (tabId === 'deployers') loadDeployers();
     }
-    
     showAlert(showFullAddresses ? 'Mostrando direcciones completas' : 'Mostrando direcciones cortas', 'info');
 }
 
 function updateAddressModeUI() {
     const modeText = document.getElementById('addressModeText');
     const toggleBtn = document.getElementById('addressToggleBtn');
-    
-    if (modeText) {
-        modeText.textContent = showFullAddresses ? 'Direcciones completas' : 'Direcciones cortas';
-    }
-    
+    if (modeText) modeText.textContent = showFullAddresses ? 'Direcciones completas' : 'Direcciones cortas';
     if (toggleBtn) {
         toggleBtn.textContent = showFullAddresses ? '👁️' : '👁️‍🗨️';
         toggleBtn.title = showFullAddresses ? 'Mostrar direcciones cortas' : 'Mostrar direcciones completas';
     }
 }
 
-// Auto-actualizar health cada 30 segundos
 setInterval(loadHealth, 30000);

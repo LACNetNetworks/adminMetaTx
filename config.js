@@ -1,164 +1,154 @@
-/* config.js
-   - Maneja selector Testnet/Mainnet
-   - Persiste configuración por red en localStorage
-   - Mantiene compatibilidad con el app.js actual (apiUrl, apiKey, contractAddress)
+/* config.js - Simplified
+   - Solo obtiene datos desde el endpoint /config del servidor
+   - No usa localStorage
+   - Mantiene compatibilidad con app.js (expone window.APP_CONFIG)
 */
 
 (function () {
-  const LS_ACTIVE = "activeNetwork";
-  const LS_NETWORKS = "networksConfig";
-  const LS_API_URL = "apiUrl";              // compat
-  const LS_API_KEY = "apiKey";              // compat
-  const LS_CONTRACT = "contractAddress";    // compat
+  let currentNetwork = 'testnet'; // Red por defecto
+  let networksConfig = null;
 
-  const DEFAULTS = {
-    testnet: {
-      label: "Testnet",
-      apiUrl: "https://admin-metatx-test-production.up.railway.app",
-      contractAddress: "0x4053cA6bcdEc6638d9Ad83a5c74d0246C7670ACd"
-    },
-    mainnet: {
-      label: "Mainnet",
-      apiUrl: "https://admin-metatx-production.up.railway.app",
-      contractAddress: "0x1B5c82C4093D2422699255f59f3B8A33c4a37773"
+  // Cargar configuración desde el servidor
+  async function loadConfigFromServer() {
+    try {
+      const response = await fetch('/config', { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error('No se pudo cargar la configuración del servidor');
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error cargando configuración:', error);
+      return null;
+    }
+  }
+
+  // Aplicar configuración de la red activa
+  function applyNetworkConfig(networks, activeKey) {
+    const cfg = networks[activeKey];
+    if (!cfg) {
+      console.error('Configuración no encontrada para la red:', activeKey);
+      return;
+    }
+
+    // Exponer configuración global para app.js
+    window.APP_CONFIG = {
+      network: activeKey,
+      apiUrl: cfg.apiUrl || '',
+      apiKey: networks.apiKey || '', // API Key global
+      contractAddress: cfg.contractAddress || ''
+    };
+
+    // Disparar evento para que otros componentes reaccionen
+    window.dispatchEvent(new CustomEvent('networkChanged', { detail: window.APP_CONFIG }));
+  }
+
+  // Actualizar UI con la configuración actual
+  function updateUI() {
+    if (!networksConfig || !currentNetwork) return;
+
+    const cfg = networksConfig[currentNetwork];
+    if (!cfg) return;
+
+    // Actualizar selectores
+    const headerSelect = document.getElementById('networkSelectHeader');
+    const modalSelect = document.getElementById('networkSelect');
+    if (headerSelect) headerSelect.value = currentNetwork;
+    if (modalSelect) modalSelect.value = currentNetwork;
+
+    // Actualizar campos del modal (solo lectura)
+    const apiUrlInput = document.getElementById('apiUrl');
+    const contractInput = document.getElementById('contractAddressInput');
+    if (apiUrlInput) apiUrlInput.value = cfg.apiUrl || '';
+    if (contractInput) contractInput.value = cfg.contractAddress || '';
+
+    // Actualizar header "Network"
+    const networkNameEl = document.getElementById('networkName');
+    if (networkNameEl) {
+      networkNameEl.textContent = currentNetwork.toUpperCase();
+    }
+
+    // Actualizar Contract en header
+    const contractEl = document.getElementById('contractAddress');
+    if (contractEl && cfg.contractAddress) {
+      // Usar función shortenAddress si existe (definida en app.js)
+      if (typeof window.shortenAddress === 'function') {
+        contractEl.innerHTML = window.shortenAddress(cfg.contractAddress);
+      } else {
+        contractEl.textContent = cfg.contractAddress;
+      }
+    }
+  }
+
+  // Cambiar de red
+  function changeNetwork(newKey) {
+    if (!networksConfig || !networksConfig[newKey]) {
+      console.error('Red no válida:', newKey);
+      return;
+    }
+
+    currentNetwork = newKey;
+    applyNetworkConfig(networksConfig, currentNetwork);
+    updateUI();
+  }
+
+  // Inicialización
+  async function init() {
+    // Cargar configuración del servidor
+    networksConfig = await loadConfigFromServer();
+    
+    if (!networksConfig) {
+      console.error('No se pudo cargar la configuración del servidor');
+      return;
+    }
+
+    // Aplicar configuración inicial
+    applyNetworkConfig(networksConfig, currentNetwork);
+    updateUI();
+
+    // Listeners para cambio de red
+    const headerSelect = document.getElementById('networkSelectHeader');
+    const modalSelect = document.getElementById('networkSelect');
+
+    if (headerSelect) {
+      headerSelect.addEventListener('change', (e) => changeNetwork(e.target.value));
+    }
+    if (modalSelect) {
+      modalSelect.addEventListener('change', (e) => changeNetwork(e.target.value));
+    }
+
+    console.log('✅ Configuración cargada desde servidor:', networksConfig);
+    console.log('🌐 Red inicial:', currentNetwork);
+  }
+
+  // Exponer función para cambiar red desde el modal
+  window.saveNetworkConfigUI = function () {
+    const modalSelect = document.getElementById('networkSelect');
+    if (modalSelect) {
+      changeNetwork(modalSelect.value);
+      
+      // Cerrar modal si existe
+      const modal = document.getElementById('configModal');
+      if (modal) modal.classList.remove('show');
+      
+      // Mostrar notificación si la función existe
+      if (typeof window.showAlert === 'function') {
+        window.showAlert(`✅ Red cambiada a ${currentNetwork}`, 'success');
+      }
     }
   };
 
-  function safeJsonParse(s, fallback) {
-    try { return JSON.parse(s); } catch { return fallback; }
-  }
-
-  function loadNetworks() {
-    const stored = safeJsonParse(localStorage.getItem(LS_NETWORKS), null);
-    return stored && typeof stored === "object" ? { ...DEFAULTS, ...stored } : { ...DEFAULTS };
-  }
-
-  function saveNetworks(networks) {
-    localStorage.setItem(LS_NETWORKS, JSON.stringify(networks));
-  }
-
-  function getActiveKey() {
-    return localStorage.getItem(LS_ACTIVE) || "testnet";
-  }
-
-  function setActiveKey(key) {
-    localStorage.setItem(LS_ACTIVE, key);
-  }
-
-  function applyCompatibilityKeys(networks, activeKey) {
-    const cfg = networks[activeKey] || DEFAULTS.testnet;
-    localStorage.setItem(LS_API_URL, cfg.apiUrl || "");
-    localStorage.setItem(LS_CONTRACT, cfg.contractAddress || "");
-    // apiKey es global y se guarda separado (compat), no se toca acá.
-    window.APP_CONFIG = {
-      network: activeKey,
-      apiUrl: cfg.apiUrl || "",
-      apiKey: localStorage.getItem(LS_API_KEY) || "",
-      contractAddress: cfg.contractAddress || ""
+  // Exponer función para obtener configuración actual
+  window.getCurrentNetworkConfig = function () {
+    return {
+      network: currentNetwork,
+      config: networksConfig ? networksConfig[currentNetwork] : null
     };
-    window.dispatchEvent(new CustomEvent("networkChanged", { detail: window.APP_CONFIG }));
-  }
-
-  async function hydrateFromServerIfNeeded(networks) {
-    // Opcional: si web-server.js expone /config, usarlo como defaults.
-    try {
-      const res = await fetch("/config", { cache: "no-store" });
-      if (!res.ok) return networks;
-      const data = await res.json();
-      // data = { testnet: {apiUrl, contractAddress}, mainnet: {...} }
-      ["testnet", "mainnet"].forEach((k) => {
-        if (data?.[k]) {
-          networks[k] = { ...networks[k], ...data[k] };
-        }
-      });
-      return networks;
-    } catch {
-      return networks;
-    }
-  }
-
-  function setUIFromState() {
-    const networks = loadNetworks();
-    const activeKey = getActiveKey();
-
-    const headerSelect = document.getElementById("networkSelectHeader");
-    const modalSelect = document.getElementById("networkSelect");
-    const apiUrlInput = document.getElementById("apiUrl");
-    const apiKeyInput = document.getElementById("apiKey");
-    const contractInput = document.getElementById("contractAddressInput");
-
-    if (headerSelect) headerSelect.value = activeKey;
-    if (modalSelect) modalSelect.value = activeKey;
-
-    const cfg = networks[activeKey] || DEFAULTS.testnet;
-    if (apiUrlInput) apiUrlInput.value = cfg.apiUrl || "";
-    if (contractInput) contractInput.value = cfg.contractAddress || "";
-    if (apiKeyInput) apiKeyInput.value = localStorage.getItem(LS_API_KEY) || "";
-
-    // Reflejar en header "Network" si existe
-    const networkNameEl = document.getElementById("networkName");
-    if (networkNameEl) networkNameEl.textContent = (DEFAULTS[activeKey]?.label || activeKey);
-
-    // Reflejar Contract si existe (solo UI; app.js puede refrescar luego)
-    const contractEl = document.getElementById("contractAddress");
-    const compatContract = localStorage.getItem(LS_CONTRACT) || cfg.contractAddress || "";
-    if (contractEl && compatContract) contractEl.textContent = compatContract;
-  }
-
-  async function init() {
-    let networks = loadNetworks();
-    networks = await hydrateFromServerIfNeeded(networks);
-    saveNetworks(networks);
-
-    const activeKey = getActiveKey();
-    applyCompatibilityKeys(networks, activeKey);
-
-    // Listeners
-    const headerSelect = document.getElementById("networkSelectHeader");
-    const modalSelect = document.getElementById("networkSelect");
-
-    function onChangeNetwork(newKey) {
-      const nets = loadNetworks();
-      setActiveKey(newKey);
-      applyCompatibilityKeys(nets, newKey);
-      setUIFromState();
-    }
-
-    if (headerSelect) {
-      headerSelect.addEventListener("change", (e) => onChangeNetwork(e.target.value));
-    }
-    if (modalSelect) {
-      modalSelect.addEventListener("change", (e) => onChangeNetwork(e.target.value));
-    }
-
-    setUIFromState();
-  }
-
-  // Exponer función usada por el botón del modal
-  window.saveNetworkConfigUI = function () {
-    const networks = loadNetworks();
-    const key = (document.getElementById("networkSelect")?.value) || getActiveKey();
-
-    const apiUrl = document.getElementById("apiUrl")?.value?.trim() || "";
-    const apiKey = document.getElementById("apiKey")?.value || "";
-    const contractAddress = document.getElementById("contractAddressInput")?.value?.trim() || "";
-
-    networks[key] = { ...(networks[key] || {}), apiUrl, contractAddress };
-
-    saveNetworks(networks);
-    localStorage.setItem(LS_API_KEY, apiKey);          // global
-    setActiveKey(key);
-    applyCompatibilityKeys(networks, key);
-    setUIFromState();
-
-    // Si existe el modal, cerrarlo (compat con tu UI)
-    const modal = document.getElementById("configModal");
-    if (modal) modal.classList.remove("show");
   };
 
   // Arranque cuando el DOM está listo
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
