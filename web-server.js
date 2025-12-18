@@ -8,7 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
 
-const PORT = process.env.WEB_PORT || 3001;
+const PORT = process.env.WEB_PORT || 3000;
 
 const mimeTypes = {
     '.html': 'text/html',
