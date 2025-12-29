@@ -31,8 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.APP_CONFIG) {
             API_URL = window.APP_CONFIG.apiUrl;
             API_KEY = window.APP_CONFIG.apiKey;
-            console.log('✅ API URL inicial:', API_URL);
-            console.log('✅ API KEY cargado:', API_KEY ? '***' + API_KEY.slice(-4) : 'NO CONFIGURADO');
+            console.log('✅  API URL inicial:', API_URL);
+            console.log('✅  API KEY cargado:', API_KEY ? '***' + API_KEY.slice(-4) : 'NO CONFIGURADO');
             loadHealth();
             loadConfig();
         } else {
