@@ -288,13 +288,33 @@ async function loadCallers() {
     }
 }
 
+async function setDeployerAllowed(allowed) {
+    const address = document.getElementById('deployerAddress').value;
+    if (!address || !isValidAddress(address)) {
+        showAlert('Dirección inválida', 'error');
+        return;
+    }
+
+    try {
+        showLoader(allowed ? 'Permitiendo deployer...' : 'Bloqueando deployer...', `Procesando: ${shortenAddressPlain(address)}`);
+        const data = await apiRequest('/deployer/set-allowed', 'POST', { deployer: address, allowed: allowed });
+        hideLoader();
+        showAlert(`Deployer ${allowed ? 'permitido' : 'bloqueado'} correctamente. TX: ${shortenHash(data.txHash)}`, 'success');
+        document.getElementById('deployerAddress').value = '';
+        loadDeployers();
+    } catch (error) {
+        hideLoader();
+        console.error('Error setting deployer:', error);
+    }
+}
+
 async function addDeployer() {
     const address = document.getElementById('deployerAddress').value;
     if (!address || !isValidAddress(address)) {
         showAlert('Dirección inválida', 'error');
         return;
     }
-    
+
     try {
         showLoader('Agregando deployer...', `Procesando: ${shortenAddressPlain(address)}`);
         const data = await apiRequest('/deployer/set-allowed', 'POST', { deployer: address, allowed: true });
@@ -308,11 +328,11 @@ async function addDeployer() {
     }
 }
 
-async function setDeployBucket() {
+async function setDeployerBucket() {
     const address = document.getElementById('bucketDeployerAddress').value;
     const limit = document.getElementById('bucketLimit').value;
     const duration = document.getElementById('bucketDuration').value;
-    
+
     if (!address || !isValidAddress(address)) {
         showAlert('Dirección inválida', 'error');
         return;
@@ -325,14 +345,14 @@ async function setDeployBucket() {
         showAlert('Duración inválida', 'error');
         return;
     }
-    
+
     try {
         showLoader('Configurando gas bucket...', `${formatNumber(limit)} gas por ${duration}s`);
-        const data = await apiRequest('/deployer/set-bucket-config', 'POST', { 
-            deployer: address, 
-            limit: limit, 
+        const data = await apiRequest('/deployer/set-bucket-config', 'POST', {
+            deployer: address,
+            limit: limit,
             durationSeconds: duration,
-            useCustom: true 
+            useCustom: true
         });
         hideLoader();
         showAlert(`Gas bucket configurado correctamente. TX: ${shortenHash(data.txHash)}`, 'success');
